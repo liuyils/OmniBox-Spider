@@ -22,6 +22,7 @@ const https = require("https");
 const HOST = "https://www.xlys02.com";
 const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36";
 const MOBILE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1";
+const DANMU_API = process.env.DANMU_API || "";
 
 // 会话缓存(20分钟)
 let SESSION_CACHE = {
@@ -72,6 +73,46 @@ const getId = (href) => {
     let id = href.split(".htm")[0];
     if (id.startsWith("/")) id = id.substring(1);
     return id;
+};
+
+const extractDetailVodName = ($, videoId = "") => {
+    const invalidTitles = new Set(["观看历史", "简介", "剧集列表", "相关推荐", "热门推荐"]);
+    const pickMainTitle = (text) => {
+        if (!text) return "";
+        const raw = text.replace(/\s+/g, " ").trim();
+        // 优先提取《片名》
+        const quoted = raw.match(/《\s*([^》]+?)\s*》/);
+        if (quoted && quoted[1]) return quoted[1].trim();
+        return raw;
+    };
+    const selectors = [
+        "h1",
+        ".video-title",
+        ".detail-title",
+        ".vod-title",
+        ".card-title"
+    ];
+
+    for (const sel of selectors) {
+        const txt = pickMainTitle($(sel).first().text());
+        if (txt && !invalidTitles.has(txt)) {
+            return txt;
+        }
+    }
+
+    // 回退到页面 title
+    const pageTitle = $("title").first().text().trim();
+    if (pageTitle) {
+        const cleanTitle = pickMainTitle(pageTitle
+            .replace(/\s*[-|_｜]\s*修罗影视.*$/i, "")
+            .replace(/\s*[-|_｜].*$/, "")
+            .trim());
+        if (cleanTitle && !invalidTitles.has(cleanTitle)) {
+            return cleanTitle;
+        }
+    }
+
+    return videoId || "未知视频";
 };
 
 const request = async (url, options = {}) => {
@@ -144,6 +185,124 @@ const calcVerifyCode = (text) => {
         case "-": return a - b;
         case "*": return a * b;
         default: return null;
+    }
+};
+
+// ========== 弹幕工具函数 ==========
+const preprocessTitle = (title) => {
+    if (!title) return "";
+    return title
+        .replace(/4[kK]|[xX]26[45]|720[pP]|1080[pP]|2160[pP]/g, " ")
+        .replace(/[hH]\\.?26[45]/g, " ")
+        .replace(/BluRay|WEB-DL|HDR|REMUX/gi, " ")
+        .replace(/\.mp4|\.mkv|\.avi|\.flv/gi, " ");
+};
+
+const chineseToArabic = (cn) => {
+    const map = { '零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+    if (!isNaN(cn)) return parseInt(cn, 10);
+    if (cn.length === 1) return map[cn] || cn;
+    if (cn.length === 2) {
+        if (cn[0] === '十') return 10 + map[cn[1]];
+        if (cn[1] === '十') return map[cn[0]] * 10;
+    }
+    if (cn.length === 3) return map[cn[0]] * 10 + map[cn[2]];
+    return cn;
+};
+
+const extractEpisode = (title) => {
+    if (!title) return "";
+    const processedTitle = preprocessTitle(title).trim();
+
+    const cnMatch = processedTitle.match(/第\s*([零一二三四五六七八九十0-9]+)\s*[集话章节回期]/);
+    if (cnMatch) return String(chineseToArabic(cnMatch[1]));
+
+    const seMatch = processedTitle.match(/[Ss](?:\d{1,2})?[-._\s]*[Ee](\d{1,3})/i);
+    if (seMatch) return seMatch[1];
+
+    const epMatch = processedTitle.match(/\b(?:EP|E)[-._\s]*(\d{1,3})\b/i);
+    if (epMatch) return epMatch[1];
+
+    const bracketMatch = processedTitle.match(/[\[\(【(](\d{1,3})[\]\)】)]/);
+    if (bracketMatch) {
+        const num = bracketMatch[1];
+        if (!["720", "1080", "480"].includes(num)) return num;
+    }
+
+    return "";
+};
+
+const buildFileNameForDanmu = (vodName, episodeTitle) => {
+    if (!vodName) return "";
+    if (!episodeTitle || episodeTitle === "正片" || episodeTitle === "播放") {
+        return vodName;
+    }
+
+    const digits = extractEpisode(episodeTitle);
+    if (digits) {
+        const epNum = parseInt(digits, 10);
+        if (epNum > 0) {
+            if (epNum < 10) return `${vodName} S01E0${epNum}`;
+            return `${vodName} S01E${epNum}`;
+        }
+    }
+    return vodName;
+};
+
+const matchDanmu = async (fileName) => {
+    if (!DANMU_API || !fileName) return [];
+
+    try {
+        logInfo(`💬 匹配弹幕: ${fileName}`);
+        const matchUrl = `${DANMU_API}/api/v2/match`;
+        const response = await OmniBox.request(matchUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            body: JSON.stringify({ fileName })
+        });
+
+        if (response.statusCode !== 200) {
+            logInfo(`⚠ 弹幕匹配失败: HTTP ${response.statusCode}`);
+            return [];
+        }
+
+        const matchData = JSON.parse(response.body);
+        if (!matchData.isMatched) {
+            logInfo("⚠ 弹幕未匹配到");
+            return [];
+        }
+
+        const matches = matchData.matches || [];
+        if (matches.length === 0) return [];
+
+        const firstMatch = matches[0];
+        const episodeId = firstMatch.episodeId;
+        const animeTitle = firstMatch.animeTitle || "";
+        const episodeTitle = firstMatch.episodeTitle || "";
+        if (!episodeId) return [];
+
+        let danmakuName = "弹幕";
+        if (animeTitle && episodeTitle) {
+            danmakuName = `${animeTitle} - ${episodeTitle}`;
+        } else if (animeTitle) {
+            danmakuName = animeTitle;
+        } else if (episodeTitle) {
+            danmakuName = episodeTitle;
+        }
+
+        const danmakuURL = `${DANMU_API}/api/v2/comment/${episodeId}?format=xml`;
+        logInfo(`✅ 弹幕匹配成功: ${danmakuName}`);
+
+        return [{
+            name: danmakuName,
+            url: danmakuURL
+        }];
+    } catch (e) {
+        logError("⚠ 弹幕匹配异常", e);
+        return [];
     }
 };
 
@@ -233,6 +392,7 @@ async function detail(params) {
 
     const $ = cheerio.load(html);
     const playUrls = [];
+    const vodName = extractDetailVodName($, videoId);
 
     $("#play-list a").each((_, item) => {
         const name = $(item).text().trim();
@@ -251,7 +411,7 @@ async function detail(params) {
             const parts = item.split('$');
             return {
                 name: parts[0] || '正片',
-                playId: parts[1] || parts[0]
+                playId: `${parts[1] || parts[0]}|${vodName}|${parts[0] || '正片'}`
             };
         })
     }];
@@ -259,7 +419,7 @@ async function detail(params) {
     return {
         list: [{
             vod_id: videoId,
-            vod_name: $("h2").first().text().trim(),
+            vod_name: vodName,
             vod_pic: fixImg($("img.cover").attr("src")),
             vod_content: $("#synopsis").text().trim(),
             vod_play_sources: playSources
@@ -445,98 +605,126 @@ async function parseSearch(html, pg, keyword = "") {
 }
 
 async function play(params) {
-    const playId = params.playId;
+    let playId = params.playId;
     logInfo(`🎬 准备解析: ${playId}`);
+
+    let vodName = "";
+    let episodeName = "";
+
+    if (playId && playId.includes('|')) {
+        const parts = playId.split('|');
+        playId = parts.shift() || "";
+        vodName = parts.shift() || "";
+        episodeName = parts.join('|') || "";
+        logInfo(`📌 透传信息 - 视频: ${vodName}, 集数: ${episodeName}`);
+    }
 
     try {
         const playPageUrl = `${HOST}/${playId}.htm`;
         const playPageHtml = await request(playPageUrl);
         const pidMatch = playPageHtml.match(/var pid = (\d+);/);
+        let playResponse;
 
         if (!pidMatch) {
             logInfo("❌ 无法提取 pid，直接返回嗅探");
-            return {
+            playResponse = {
                 urls: [{ name: "嗅探", url: playPageUrl }],
                 parse: 1
-            };
-        }
-
-        const pid = pidMatch[1];
-        const t = new Date().getTime();
-        const keyStr = CryptoJS.MD5(pid + '-' + t).toString().substring(0, 16);
-        const key = CryptoJS.enc.Utf8.parse(keyStr);
-        const encrypted = CryptoJS.AES.encrypt(pid + '-' + t, key, {
-            mode: CryptoJS.mode.ECB,
-            padding: CryptoJS.pad.Pkcs7
-        });
-        const sg = encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase();
-        const linesUrl = `${HOST}/lines?t=${t}&sg=${sg}&pid=${pid}`;
-
-        logInfo("📡 请求线路接口");
-        const res = await axiosInstance.get(linesUrl, {
-            headers: {
-                "User-Agent": UA,
-                "Referer": playPageUrl,
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
-
-        if (!res.data || res.data.code !== 0 || !res.data.data) {
-            logInfo("❌ 接口返回异常");
-            return {
-                urls: [{ name: "嗅探", url: playPageUrl }],
-                parse: 1
-            };
-        }
-
-        const d = res.data.data;
-        const playUrls = [];
-
-        // 直连优先
-        if (d.url3) {
-            const urls = d.url3.split(',');
-            for (let i = 0; i < urls.length; i++) {
-                const u = urls[i].trim();
-                if (!u || u.includes(".m3u8") || u.includes("p3-tt.byteimg.com")) {
-                    logInfo(`🚫 屏蔽线路: ${u}`);
-                    continue;
-                }
-                playUrls.push({ name: `直链${i + 1}`, url: u });
-                logInfo(`✅ 直链${i + 1}: ${u}`);
-            }
-        }
-
-        // TOS 线路
-        if (d.tos) {
-            try {
-                const tosUrl = `${HOST}/god/${pid}?type=1`;
-                const tosRes = await requestPost(tosUrl, `t=${t}&sg=${sg}&verifyCode=888`);
-                if (tosRes && tosRes.url && !tosRes.url.includes(".m3u8") && !tosRes.url.includes("byteimg")) {
-                    playUrls.push({ name: "TOS", url: tosRes.url });
-                    logInfo(`✅ TOS线路: ${tosRes.url}`);
-                }
-            } catch (e) {
-                logError("❌ TOS处理失败", e);
-            }
-        }
-
-        if (playUrls.length > 0) {
-            logInfo(`🎉 最终可播放线路数量: ${playUrls.length}`);
-            return {
-                urls: playUrls,
-                parse: 0,
-                header: {
-                    "User-Agent": UA,
-                    "Referer": HOST
-                }
             };
         } else {
-            logInfo("⚠ 无可用线路，返回嗅探");
-            return {
-                urls: [{ name: "嗅探", url: playPageUrl }],
-                parse: 1
-            };
+            const pid = pidMatch[1];
+            const t = new Date().getTime();
+            const keyStr = CryptoJS.MD5(pid + '-' + t).toString().substring(0, 16);
+            const key = CryptoJS.enc.Utf8.parse(keyStr);
+            const encrypted = CryptoJS.AES.encrypt(pid + '-' + t, key, {
+                mode: CryptoJS.mode.ECB,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            const sg = encrypted.ciphertext.toString(CryptoJS.enc.Hex).toUpperCase();
+            const linesUrl = `${HOST}/lines?t=${t}&sg=${sg}&pid=${pid}`;
+
+            logInfo("📡 请求线路接口");
+            const res = await axiosInstance.get(linesUrl, {
+                headers: {
+                    "User-Agent": UA,
+                    "Referer": playPageUrl,
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            if (!res.data || res.data.code !== 0 || !res.data.data) {
+                logInfo("❌ 接口返回异常");
+                playResponse = {
+                    urls: [{ name: "嗅探", url: playPageUrl }],
+                    parse: 1
+                };
+            } else {
+                const d = res.data.data;
+                const playUrls = [];
+
+                // 直连优先
+                if (d.url3) {
+                    const urls = d.url3.split(',');
+                    for (let i = 0; i < urls.length; i++) {
+                        const u = urls[i].trim();
+                        if (!u || u.includes(".m3u8") || u.includes("p3-tt.byteimg.com")) {
+                            logInfo(`🚫 屏蔽线路: ${u}`);
+                            continue;
+                        }
+                        playUrls.push({ name: `直链${i + 1}`, url: u });
+                        logInfo(`✅ 直链${i + 1}: ${u}`);
+                    }
+                }
+
+                // TOS 线路
+                if (d.tos) {
+                    try {
+                        const tosUrl = `${HOST}/god/${pid}?type=1`;
+                        const tosRes = await requestPost(tosUrl, `t=${t}&sg=${sg}&verifyCode=888`);
+                        if (tosRes && tosRes.url && !tosRes.url.includes(".m3u8") && !tosRes.url.includes("byteimg")) {
+                            playUrls.push({ name: "TOS", url: tosRes.url });
+                            logInfo(`✅ TOS线路: ${tosRes.url}`);
+                        }
+                    } catch (e) {
+                        logError("❌ TOS处理失败", e);
+                    }
+                }
+
+                if (playUrls.length > 0) {
+                    logInfo(`🎉 最终可播放线路数量: ${playUrls.length}`);
+                    playResponse = {
+                        urls: playUrls,
+                        parse: 0,
+                        header: {
+                            "User-Agent": UA,
+                            "Referer": HOST
+                        }
+                    };
+                } else {
+                    logInfo("⚠ 无可用线路，返回嗅探");
+                    playResponse = {
+                        urls: [{ name: "嗅探", url: playPageUrl }],
+                        parse: 1
+                    };
+                }
+            }
         }
+
+        if (DANMU_API && vodName) {
+            const fileName = buildFileNameForDanmu(vodName, episodeName);
+            logInfo(`💬 尝试匹配弹幕文件名: ${fileName}`);
+            if (fileName) {
+                const danmakuList = await matchDanmu(fileName);
+                if (danmakuList.length > 0) {
+                    playResponse.danmaku = danmakuList;
+                    logInfo("✅ 已注入弹幕数据");
+                }
+            }
+        } else if (!DANMU_API) {
+            logInfo("ℹ DANMU_API 未配置，跳过弹幕匹配");
+        }
+
+        return playResponse;
     } catch (e) {
         logError("🔥 播放异常", e);
         return {
