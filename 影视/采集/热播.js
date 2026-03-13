@@ -1,4 +1,8 @@
 // @name 热播
+// @author 
+// @description 刮削：支持，弹幕：支持，嗅探：支持
+// @version 1.0.0
+// @downloadURL https://gh-proxy.org/https://github.com/Silent1566/OmniBox-Spider/raw/refs/heads/main/影视/采集/热播.js
 /**
  * OmniBox 爬虫脚本 - 热播（APP 接口）
  *
@@ -31,6 +35,11 @@ const FORM_BOUNDARY = "18a7affc-a82a-4dc2-a848-7b0658d7665c";
 const DEFAULT_HEADERS = {
   "User-Agent": UA,
   "Accept-Language": "zh-CN,zh;q=0.8",
+  Referer: HOST,
+};
+
+const PLAY_HEADERS = {
+  "User-Agent": UA,
   Referer: HOST,
 };
 
@@ -301,6 +310,28 @@ async function matchDanmu(fileName) {
     logInfo(`弹幕匹配失败: ${error.message}`);
     return [];
   }
+}
+
+/**
+ * 嗅探播放页，兜底提取真实视频地址
+ */
+async function sniffRebangPlay(playUrl) {
+  if (!playUrl) return null;
+  try {
+    logInfo("尝试嗅探播放页", playUrl);
+    const sniffed = await OmniBox.sniffVideo(playUrl);
+    if (sniffed && sniffed.url) {
+      logInfo("嗅探成功", sniffed.url);
+      return {
+        urls: [{ name: "嗅探线路", url: sniffed.url }],
+        parse: 0,
+        header: sniffed.header || { ...PLAY_HEADERS, Referer: playUrl },
+      };
+    }
+  } catch (error) {
+    logInfo(`嗅探失败: ${error.message}`);
+  }
+  return null;
 }
 
 /**
@@ -745,19 +776,35 @@ async function play(params) {
           header: headers,
         };
       } catch (parseError) {
-        logError("解析接口调用失败，回退 parse=1", parseError);
-        playResponse = {
-          urls: [{ name: "解析", url: parseUrl }],
-          parse: 1,
-          header: headers,
-        };
+        logError("解析接口调用失败，尝试嗅探", parseError);
+        const sniffResult = await sniffRebangPlay(ids.url || parseUrl);
+        if (sniffResult) {
+          playResponse = sniffResult;
+        } else {
+          playResponse = {
+            urls: [{ name: "解析", url: parseUrl }],
+            parse: 1,
+            header: headers,
+          };
+        }
       }
     } else {
-      playResponse = {
-        urls: [{ name: "直连", url: ids.url }],
-        parse: 0,
-        header: headers,
-      };
+      if (ids.url && ids.url.startsWith("http")) {
+        playResponse = {
+          urls: [{ name: "直连", url: ids.url }],
+          parse: 0,
+          header: headers,
+        };
+      } else {
+        const sniffResult = await sniffRebangPlay(ids.url);
+        playResponse =
+          sniffResult ||
+          {
+            urls: [{ name: "直连", url: ids.url }],
+            parse: 0,
+            header: headers,
+          };
+      }
     }
 
     if (DANMU_API && vodName) {
@@ -773,6 +820,10 @@ async function play(params) {
     return playResponse;
   } catch (error) {
     logError("播放解析失败", error);
+    const fallbackSniff = await sniffRebangPlay(playId);
+    if (fallbackSniff) {
+      return fallbackSniff;
+    }
     return {
       urls: [{ name: "回退", url: playId }],
       parse: 1,
