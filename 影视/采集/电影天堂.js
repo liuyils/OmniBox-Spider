@@ -1,6 +1,8 @@
-// @name 电影天堂 (增强版)
-/** * OmniBox 采集站直接爬虫脚本 (增强版) * * 此脚本在原版基础上增加了自定义分类、分类屏蔽和数据合并功能 * 参考了 "电影天堂.js" 的实现逻辑 * * 配置说明： * 1. 在 OmniBox 后台添加采集站，获取采集站的 API 地址 * 2. 将 API 地址配置到环境变量 SITE_API 中，或直接修改下面的 SITE_API 常量 * 3. （可选）配置弹幕 API 地址到环境变量 DANMU_API 中，或直接修改下面的 DANMU_API 常量 * 弹幕 API 地址示例：https://danmu.example.com * * 使用方法： * 1. 在 OmniBox 后台创建爬虫源，选择 JavaScript 类型 * 2. 复制此脚本内容到爬虫源编辑器 * 3. 配置环境变量 SITE_API 为采集站的 API 地址 * 4. 保存并测试 */
-
+// @name 电影天堂
+// @author 
+// @description 刮削：支持，弹幕：支持，嗅探：支持
+// @version 1.0.0
+// @downloadURL https://xget.xi-xu.me/gh/Silent1566/OmniBox-Spider/raw/refs/heads/main/%E5%BD%B1%E8%A7%86/%E9%87%87%E9%9B%86/%E7%94%B5%E5%BD%B1%E5%A4%A9%E5%A0%82.js
 const OmniBox = require("omnibox_sdk");
 
 // ==================== 配置区域 ====================
