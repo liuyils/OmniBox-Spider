@@ -1,8 +1,8 @@
 // @name 乐兔
 // @author 
 // @description 刮削：支持，弹幕：支持，嗅探：支持，广告：有
-// @version 1.0.2
-// @downloadURL https://xget.xi-xu.me/gh/Silent1566/OmniBox-Spider/raw/refs/heads/main/影视/采集/乐兔.js
+// @version 1.0.3
+// @downloadURL https://gh-proxy.org/https://github.com/Silent1566/OmniBox-Spider/raw/refs/heads/main/影视/采集/乐兔.js
 /**
  * 质量较差不建议加入
  *
