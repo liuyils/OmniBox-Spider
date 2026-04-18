@@ -83,10 +83,176 @@ function buildClassAndFilters() {
       { type_id: "26", type_name: "蓝光原盘" },
     ],
     filters: {
-      "1": [{ key: "by", name: "排序", init: "time", value: [{ name: "最新", value: "time" }] }],
-      "2": [{ key: "by", name: "排序", init: "time", value: [{ name: "最新", value: "time" }] }],
-      "25": [{ key: "by", name: "排序", init: "time", value: [{ name: "最新", value: "time" }] }],
-      "26": [{ key: "by", name: "排序", init: "time", value: [{ name: "最新", value: "time" }] }],
+      "1": [
+        { key: "class", name: "类型", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "古装", value: "古装" },
+          { name: "战争", value: "战争" },
+          { name: "青春偶像", value: "青春偶像" },
+          { name: "喜剧", value: "喜剧" },
+          { name: "家庭", value: "家庭" },
+          { name: "犯罪", value: "犯罪" },
+          { name: "动作", value: "动作" },
+          { name: "奇幻", value: "奇幻" },
+          { name: "剧情", value: "剧情" },
+          { name: "历史", value: "历史" },
+        ] },
+        { key: "area", name: "地区", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "内地", value: "内地" },
+          { name: "韩国", value: "韩国" },
+          { name: "香港", value: "香港" },
+          { name: "台湾", value: "台湾" },
+        ] },
+        { key: "year", name: "年份", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "2026", value: "2026" },
+          { name: "2025", value: "2025" },
+          { name: "2024", value: "2024" },
+          { name: "2023", value: "2023" },
+        ] },
+        { key: "by", name: "排序", init: "time", value: [
+          { name: "最新", value: "time" },
+          { name: "人气", value: "hits" },
+          { name: "评分", value: "score" },
+        ] },
+      ],
+      "2": [
+        { key: "subType", name: "片库", init: "2", value: [
+          { name: "全部类型", value: "2" },
+          { name: "国产剧", value: "13" },
+          { name: "日剧", value: "15" },
+          { name: "韩剧", value: "31" },
+          { name: "泰剧", value: "32" },
+          { name: "印度剧", value: "33" },
+          { name: "欧美剧", value: "16" },
+          { name: "综艺", value: "23" },
+          { name: "纪录片", value: "24" },
+          { name: "儿童", value: "35" },
+          { name: "国漫", value: "27" },
+          { name: "日漫", value: "29" },
+          { name: "韩漫", value: "36" },
+          { name: "欧美动漫", value: "28" },
+          { name: "其他动漫", value: "37" },
+          { name: "综合", value: "34" },
+        ] },
+        { key: "class", name: "剧情", init: "", value: [
+          { name: "全部剧情", value: "" },
+          { name: "古装", value: "古装" },
+          { name: "战争", value: "战争" },
+          { name: "青春偶像", value: "青春偶像" },
+          { name: "喜剧", value: "喜剧" },
+          { name: "家庭", value: "家庭" },
+          { name: "犯罪", value: "犯罪" },
+          { name: "动作", value: "动作" },
+          { name: "奇幻", value: "奇幻" },
+          { name: "剧情", value: "剧情" },
+          { name: "历史", value: "历史" },
+          { name: "经典", value: "经典" },
+          { name: "乡村", value: "乡村" },
+          { name: "情景", value: "情景" },
+          { name: "商战", value: "商战" },
+          { name: "网剧", value: "网剧" },
+          { name: "其他", value: "其他" },
+        ] },
+        { key: "area", name: "地区", init: "", value: [
+          { name: "全部地区", value: "" },
+          { name: "内地", value: "内地" },
+          { name: "韩国", value: "韩国" },
+          { name: "香港", value: "香港" },
+          { name: "台湾", value: "台湾" },
+          { name: "日本", value: "日本" },
+          { name: "美国", value: "美国" },
+          { name: "泰国", value: "泰国" },
+          { name: "英国", value: "英国" },
+          { name: "新加坡", value: "新加坡" },
+          { name: "其他", value: "其他" },
+        ] },
+        { key: "lang", name: "语言", init: "", value: [
+          { name: "全部语言", value: "" },
+          { name: "国语", value: "国语" },
+          { name: "英语", value: "英语" },
+          { name: "粤语", value: "粤语" },
+          { name: "闽南语", value: "闽南语" },
+          { name: "韩语", value: "韩语" },
+          { name: "日语", value: "日语" },
+          { name: "其它", value: "其它" },
+        ] },
+        { key: "year", name: "年份", init: "", value: [
+          { name: "全部时间", value: "" },
+          { name: "2026", value: "2026" },
+          { name: "2025", value: "2025" },
+          { name: "2024", value: "2024" },
+          { name: "2023", value: "2023" },
+          { name: "2022", value: "2022" },
+          { name: "2021", value: "2021" },
+          { name: "2020", value: "2020" },
+          { name: "2019", value: "2019" },
+        ] },
+        { key: "letter", name: "字母", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "A", value: "A" },
+          { name: "B", value: "B" },
+          { name: "C", value: "C" },
+          { name: "D", value: "D" },
+          { name: "E", value: "E" },
+          { name: "F", value: "F" },
+          { name: "G", value: "G" },
+          { name: "H", value: "H" },
+          { name: "I", value: "I" },
+          { name: "J", value: "J" },
+          { name: "K", value: "K" },
+          { name: "L", value: "L" },
+          { name: "M", value: "M" },
+          { name: "N", value: "N" },
+          { name: "O", value: "O" },
+          { name: "P", value: "P" },
+          { name: "Q", value: "Q" },
+          { name: "R", value: "R" },
+          { name: "S", value: "S" },
+          { name: "T", value: "T" },
+          { name: "U", value: "U" },
+          { name: "V", value: "V" },
+          { name: "W", value: "W" },
+          { name: "X", value: "X" },
+          { name: "Y", value: "Y" },
+          { name: "Z", value: "Z" },
+          { name: "0-9", value: "0-9" },
+        ] },
+        { key: "by", name: "排序", init: "time", value: [
+          { name: "时间排序", value: "time" },
+          { name: "人气排序", value: "hits" },
+          { name: "评分排序", value: "score" },
+        ] },
+      ],
+      "25": [
+        { key: "by", name: "排序", init: "time", value: [
+          { name: "最新", value: "time" },
+          { name: "人气", value: "hits" },
+          { name: "评分", value: "score" },
+        ] },
+        { key: "year", name: "年份", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "2026", value: "2026" },
+          { name: "2025", value: "2025" },
+          { name: "2024", value: "2024" },
+          { name: "2023", value: "2023" },
+        ] },
+      ],
+      "26": [
+        { key: "by", name: "排序", init: "time", value: [
+          { name: "最新", value: "time" },
+          { name: "人气", value: "hits" },
+          { name: "评分", value: "score" },
+        ] },
+        { key: "year", name: "年份", init: "", value: [
+          { name: "全部", value: "" },
+          { name: "2026", value: "2026" },
+          { name: "2025", value: "2025" },
+          { name: "2024", value: "2024" },
+          { name: "2023", value: "2023" },
+        ] },
+      ],
     },
   };
 }
@@ -414,20 +580,33 @@ async function tryRequest(urls, options = {}) {
   throw new Error("没有可请求的 URL");
 }
 
-function buildCategoryUrls(categoryId, page) {
+function buildCategoryUrls(categoryId, page, filters = {}) {
   const pageNum = Math.max(Number(page || 1) || 1, 1);
-  if (pageNum <= 1) {
-    return [
-      `${BASE_URL}/index.php/vod/type/id/${categoryId}.html`,
-      `${BASE_URL}/index.php/vod/show/id/${categoryId}.html`,
-    ];
+  const actualId = String(filters.subType || categoryId || "1").trim();
+  const classValue = String(filters.class || "").trim();
+  const areaValue = String(filters.area || "").trim();
+  const yearValue = String(filters.year || "").trim();
+  const langValue = String(filters.lang || "").trim();
+  const letterValue = String(filters.letter || "").trim();
+  const byValue = String(filters.by || "time").trim();
+
+  const parts = [BASE_URL, "/index.php/vod/show"];
+  if (areaValue) parts.push(`/area/${encodeURIComponent(areaValue)}`);
+  if (byValue && byValue !== 'time') parts.push(`/by/${encodeURIComponent(byValue)}`);
+  if (classValue) parts.push(`/class/${encodeURIComponent(classValue)}`);
+  parts.push(`/id/${actualId}`);
+  if (langValue) parts.push(`/lang/${encodeURIComponent(langValue)}`);
+  if (yearValue) parts.push(`/year/${encodeURIComponent(yearValue)}`);
+  if (letterValue) parts.push(`/letter/${encodeURIComponent(letterValue)}`);
+  if (pageNum > 1) parts.push(`/page/${pageNum}`);
+  parts.push('.html');
+
+  const showUrl = parts.join('');
+  const fallbacks = [];
+  if (pageNum <= 1 && actualId === categoryId && !classValue && !areaValue && !yearValue && !langValue && !letterValue && byValue === 'time') {
+    fallbacks.push(`${BASE_URL}/index.php/vod/type/id/${categoryId}.html`);
   }
-  return [
-    `${BASE_URL}/index.php/vod/type/id/${categoryId}/page/${pageNum}.html`,
-    `${BASE_URL}/index.php/vod/show/id/${categoryId}/page/${pageNum}.html`,
-    `${BASE_URL}/index.php/vod/type/id/${categoryId}.html?page=${pageNum}`,
-    `${BASE_URL}/index.php/vod/show/id/${categoryId}.html?page=${pageNum}`,
-  ];
+  return [showUrl, ...fallbacks.filter(Boolean)];
 }
 
 function buildSearchUrls(keyword, page) {
@@ -464,10 +643,11 @@ async function category(params, context) {
   try {
     const categoryId = String(params.categoryId || params.type_id || "1");
     const page = Math.max(Number(params.page || 1) || 1, 1);
-    const { html, url } = await tryRequest(buildCategoryUrls(categoryId, page));
+    const filters = params.filters || {};
+    const { html, url } = await tryRequest(buildCategoryUrls(categoryId, page, filters));
     const $ = cheerio.load(html);
     const list = extractCards($);
-    await OmniBox.log("info", `[Gimy115][category] type=${categoryId} page=${page} url=${url} list=${list.length}`);
+    await OmniBox.log("info", `[Gimy115][category] type=${categoryId} page=${page} filters=${JSON.stringify(filters)} url=${url} list=${list.length}`);
     return {
       page,
       pagecount: page + (list.length >= 20 ? 1 : 0),
